@@ -28,9 +28,20 @@
     <section class="admin-section">
       <h2>🎬 Добавить серии</h2>
       <select id="anime-select"></select>
-      <textarea id="ep-links" placeholder="Формат: номер | название | ссылка&#10;1 | Серия 1 | https://...&#10;2 | Серия 2 | https://..." rows="6"></textarea>
-      <small style="color: var(--text-muted);">Если ссылки нет - оставь поле пустым. Ссылка пока не используется, но сохранится.</small>
-      <button id="save-episodes" class="btn">Добавить серии</button>
+      
+      <div id="episodes-form">
+        <div class="episode-row">
+          <input type="number" class="ep-num" placeholder="№" min="1">
+          <input type="text" class="ep-title" placeholder="Название серии">
+          <input type="text" class="ep-link" placeholder="Ссылка на видео">
+          <button type="button" class="btn btn-danger remove-ep">×</button>
+        </div>
+      </div>
+      
+      <div class="episode-actions">
+        <button type="button" id="add-episode-row" class="btn">+ Добавить поле</button>
+        <button id="save-episodes" class="btn">Сохранить все серии</button>
+      </div>
     </section>
 
     <section class="admin-section">
@@ -55,4 +66,4 @@
 
   <script src="admin.js"></script>
 </body>
-        </html>
+</html>
