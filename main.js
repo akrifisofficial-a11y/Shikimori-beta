@@ -8,7 +8,6 @@ const ADMIN_PASSWORD = 'admin123';
 let allAnime = [];
 let currentAnime = null;
 
-// Ждём пока DOM загрузится
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   checkAdminStatus();
@@ -17,23 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
-  // Используем делегирование событий чтобы не ловить ошибки если элементов нет
   document.addEventListener('click', (e) => {
     if (e.target.id === 'theme-toggle') toggleTheme();
     if (e.target.id === 'login-btn') handleLogin();
     if (e.target.id === 'close-player') closePlayer();
-    if (e.target.id === 'add-episode-row') addEpisodeRow();
-    if (e.target.classList.contains('remove-ep')) e.target.closest('.episode-row').remove();
     if (e.target.classList.contains('modal') && e.target.id === 'player-modal') closePlayer();
   });
 
-  // Поиск и фильтр
   const searchInput = document.getElementById('search');
   const genreFilter = document.getElementById('genre-filter');
   if (searchInput) searchInput.addEventListener('input', applyFilters);
   if (genreFilter) genreFilter.addEventListener('change', applyFilters);
 
-  // Закрытие по ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.getElementById('player-modal')?.style.display === 'block') {
       closePlayer();
@@ -85,6 +79,8 @@ async function loadAnime() {
   const animeList = document.getElementById('anime-list');
   if (!animeList) return;
 
+  animeList.innerHTML = '<p class="empty">Загрузка...</p>';
+
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/anime?select=*,episodes(*)&order=created_at.desc`, {
       headers: {
@@ -93,14 +89,20 @@ async function loadAnime() {
       }
     });
 
-    if (!res.ok) throw new Error('Ошибка загрузки: ' + res.status);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     allAnime = await res.json();
+
+    if (allAnime.length === 0) {
+      animeList.innerHTML = '<p class="empty">В базе пока нет аниме</p>';
+      return;
+    }
+
     initGenreFilter(allAnime);
     renderCatalog(allAnime);
   } catch (e) {
-    animeList.innerHTML = '<p class="empty">Не удалось загрузить аниме. Проверь URL, KEY и CORS в Supabase.</p>';
     console.error(e);
+    animeList.innerHTML = `<p class="empty" style="color:#ef4444">Ошибка загрузки</p>`;
   }
 }
 
@@ -109,4 +111,129 @@ function initGenreFilter(animeData) {
   if (!genreFilter) return;
 
   const genres = new Set();
-  animeData.forEach(a
+  animeData.forEach(a => a.genres?.forEach(g => genres.add(g)));
+  genreFilter.innerHTML = '<option value="">Все жанры</option>';
+  [...genres].sort().forEach(genre => {
+    genreFilter.innerHTML += `<option value="${genre}">${genre}</option>`;
+  });
+}
+
+function applyFilters() {
+  const query = document.getElementById('search')?.value.toLowerCase().trim() || '';
+  const selectedGenre = document.getElementById('genre-filter')?.value || '';
+  let filtered = allAnime;
+
+  if (selectedGenre) filtered = filtered.filter(a => a.genres?.includes(selectedGenre));
+  if (query) filtered = filtered.filter(a => a.title.toLowerCase().includes(query));
+
+  renderCatalog(filtered);
+}
+
+function renderCatalog(animeData) {
+  const animeList = document.getElementById('anime-list');
+  if (!animeList) return;
+
+  animeList.innerHTML = '';
+  if (animeData.length === 0) {
+    animeList.innerHTML = '<p class="empty">Ничего не найдено</p>';
+    return;
+  }
+
+  animeData.forEach(anime => {
+    const watchedCount = getWatchedCount(anime.id);
+    const totalEpisodes = anime.episodes?.length || 0;
+
+    const card = document.createElement('div');
+    card.className = 'anime-card';
+    card.innerHTML = `
+      ${watchedCount > 0? `<div class="watched-badge">${watchedCount}/${totalEpisodes}</div>` : ''}
+      <img src="${anime.cover}" alt="${anime.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=No+Image'">
+      <div class="info">
+        <h3>${anime.title}</h3>
+        <div class="genres">${anime.genres?.join(', ') || ''}</div>
+      </div>
+    `;
+    card.onclick = () => openPlayer(anime);
+    animeList.appendChild(card);
+  });
+}
+
+function openPlayer(anime) {
+  currentAnime = anime;
+  document.getElementById('watching-title').textContent = anime.title;
+  document.getElementById('modal-desc').textContent = anime.description || 'Описание отсутствует';
+  document.getElementById('modal-cover').src = anime.cover;
+  document.getElementById('shiki-link').href = `https://shikimori.one/anime/${anime.shiki_id}`;
+
+  const sortedEps = (anime.episodes || []).sort((a, b) => a.num - b.num);
+  const startEp = sortedEps[0];
+
+  if (startEp) {
+    loadEpisode(startEp.num);
+    renderEpisodeList(anime, startEp.num);
+  } else {
+    document.getElementById('episode-list').innerHTML = '<p class="empty">Серии не добавлены</p>';
+    document.getElementById('player').src = '';
+  }
+
+  document.getElementById('player-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function loadEpisode(epNum) {
+  const player = document.getElementById('player');
+  if (!player ||!currentAnime) return;
+  player.src = `https://shikimori.one/anime/${currentAnime.shiki_id}/embed?episode=${epNum}`;
+}
+
+function renderEpisodeList(anime, activeNum) {
+  const epList = document.getElementById('episode-list');
+  if (!epList) return;
+
+  epList.innerHTML = '';
+
+  anime.episodes.sort((a, b) => a.num - b.num).forEach(ep => {
+    const btn = document.createElement('button');
+    btn.textContent = `${ep.num}. ${ep.title || 'Серия ' + ep.num}`;
+    if (ep.num === activeNum) btn.classList.add('active');
+    if (isEpisodeWatched(anime.id, ep.num)) btn.classList.add('watched');
+
+    btn.onclick = () => {
+      loadEpisode(ep.num);
+      saveWatchedEpisode(anime.id, ep.num);
+      renderEpisodeList(anime, ep.num);
+    };
+    epList.appendChild(btn);
+  });
+}
+
+function closePlayer() {
+  const modal = document.getElementById('player-modal');
+  const player = document.getElementById('player');
+  if (modal) modal.style.display = 'none';
+  if (player) player.src = '';
+  document.body.style.overflow = 'auto';
+  currentAnime = null;
+  renderCatalog(allAnime);
+}
+
+function getWatchedData() {
+  return JSON.parse(localStorage.getItem(WATCHED_KEY) || '{}');
+}
+
+function saveWatchedEpisode(animeId, epNum) {
+  const data = getWatchedData();
+  if (!data[animeId]) data[animeId] = [];
+  if (!data[animeId].includes(epNum)) {
+    data[animeId].push(epNum);
+    localStorage.setItem(WATCHED_KEY, JSON.stringify(data));
+  }
+}
+
+function isEpisodeWatched(animeId, epNum) {
+  return getWatchedData()[animeId]?.includes(epNum) || false;
+}
+
+function getWatchedCount(animeId) {
+  return getWatchedData()[animeId]?.length || 0;
+                     }
