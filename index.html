@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeList</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <h1>AnimeList</h1>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Найти аниме...">
+        <select id="genre-filter"><option value="">Все жанры</option></select>
+        <button id="theme-toggle">🌙</button>
+        <a href="/admin.html" id="admin-link" class="btn-admin" style="display:none;">Админка</a>
+        <button id="login-btn" class="btn-admin">Войти</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="anime-list" class="anime-grid"></div>
+
+    <div id="player-modal" class="modal">
+      <div class="modal-content">
+        <span id="close-player" class="close">&times;</span>
+        <h2 id="watching-title"></h2>
+        <div class="player-wrapper">
+          <iframe id="player" allowfullscreen></iframe>
+        </div>
+        <h3>Серии:</h3>
+        <div id="episode-list" class="episodes"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
