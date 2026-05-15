@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,36 +7,52 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="container">
-    <div style="display:flex; justify-content: space-between; align-items:center; margin:20px 0;">
+  <header>
+    <div class="container header-inner">
       <h1>Админ-панель</h1>
-      <a href="/" class="btn-admin">← На сайт</a>
+      <a href="index.html" class="btn-admin">На сайт</a>
     </div>
+  </header>
 
-    <div class="admin-section">
-      <h2>Добавить аниме</h2>
+  <main class="container">
+    <section class="admin-section">
+      <h2>➕ Добавить аниме</h2>
       <input type="text" id="title" placeholder="Название">
-      <input type="text" id="shiki_id" placeholder="Shikimori ID. Пример: 52766">
+      <input type="text" id="shiki_id" placeholder="Shikimori ID">
       <input type="text" id="cover" placeholder="Ссылка на обложку">
       <input type="text" id="genres" placeholder="Жанры через запятую">
-      <textarea id="description" placeholder="Описание" rows="3"></textarea>
-      <button id="save-anime" class="btn">Сохранить аниме</button>
-    </div>
+      <textarea id="description" placeholder="Описание"></textarea>
+      <button id="save-anime" class="btn">Сохранить</button>
+    </section>
 
-    <div class="admin-section">
-      <h2>Добавить серию</h2>
+    <section class="admin-section">
+      <h2>🎬 Добавить серии</h2>
       <select id="anime-select"></select>
-      <input type="number" id="ep-num" placeholder="Номер серии">
-      <input type="text" id="ep-title" placeholder="Название серии">
-      <button id="save-episode" class="btn">Добавить серию</button>
-    </div>
+      <textarea id="ep-links" placeholder="Формат: номер | название | ссылка&#10;1 | Серия 1 | https://...&#10;2 | Серия 2 | https://..." rows="6"></textarea>
+      <small style="color: var(--text-muted);">Если ссылки нет - оставь поле пустым. Ссылка пока не используется, но сохранится.</small>
+      <button id="save-episodes" class="btn">Добавить серии</button>
+    </section>
 
-    <div class="admin-section">
-      <h2>Все аниме</h2>
+    <section class="admin-section">
+      <h2>📋 Все аниме</h2>
       <div id="anime-edit-list"></div>
-    </div>
+    </section>
   </main>
+
+  <!-- Модалка редактирования -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <span id="close-edit" class="close">&times;</span>
+      <h2>Редактировать аниме</h2>
+      <input type="text" id="edit-title" placeholder="Название">
+      <input type="text" id="edit-shiki_id" placeholder="Shikimori ID">
+      <input type="text" id="edit-cover" placeholder="Ссылка на обложку">
+      <input type="text" id="edit-genres" placeholder="Жанры через запятую">
+      <textarea id="edit-description" placeholder="Описание"></textarea>
+      <button id="update-anime" class="btn">Сохранить изменения</button>
+    </div>
+  </div>
 
   <script src="admin.js"></script>
 </body>
-</html>
+        </html>
