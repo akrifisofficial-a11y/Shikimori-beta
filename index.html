@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AnimeList</title>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <header>
@@ -27,7 +26,16 @@
     <div id="player-modal" class="modal">
       <div class="modal-content">
         <span id="close-player" class="close">&times;</span>
-        <h2 id="watching-title"></h2>
+
+        <div class="anime-header">
+          <img id="modal-cover" src="" alt="">
+          <div class="anime-header-info">
+            <h2 id="watching-title"></h2>
+            <p id="modal-desc"></p>
+            <a id="shiki-link" href="#" target="_blank" class="shiki-link">Открыть на Shikimori</a>
+          </div>
+        </div>
+
         <div class="player-wrapper">
           <iframe id="player" allowfullscreen></iframe>
         </div>
