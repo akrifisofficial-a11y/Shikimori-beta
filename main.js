@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://ywovqlnadbpwxnkvllhh.supabase.co';
+const const SUPABASE_URL = 'https://ywovqlnadbpwxnkvllhh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3b3ZxbG5hZGJwd3hua3ZsbGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4Njk1NjAsImV4cCI6MjA5NDQ0NTU2MH0.Fb9zC4g6BPV2R-ogXNvtyGmh_HJf06E7pNnin1E1dpw';
 
 const animeList = document.getElementById('anime-list');
@@ -10,9 +10,10 @@ const themeToggle = document.getElementById('theme-toggle');
 const loginBtn = document.getElementById('login-btn');
 
 let allAnime = [];
+let currentAnime = null;
 const WATCHED_KEY = 'anime_watched_progress';
 const ADMIN_KEY = 'isAdmin';
-const ADMIN_PASSWORD = 'admin123'; // должен совпадать с SQL
+const ADMIN_PASSWORD = 'admin123';
 
 initTheme();
 checkAdminStatus();
@@ -124,6 +125,7 @@ function renderCatalog(animeData) {
 }
 
 function openPlayer(anime) {
+  currentAnime = anime;
   document.getElementById('watching-title').textContent = anime.title;
   document.getElementById('modal-desc').textContent = anime.description || 'Описание отсутствует';
   document.getElementById('modal-cover').src = anime.cover;
@@ -133,18 +135,24 @@ function openPlayer(anime) {
   const startEp = sortedEps[0];
 
   if (startEp) {
-    loadShikimoriEpisode(anime.shiki_id, startEp.num);
+    loadEpisode(startEp);
     renderEpisodeList(anime, startEp.num);
   } else {
     document.getElementById('episode-list').innerHTML = '<p class="empty">Серии не добавлены</p>';
+    player.src = '';
   }
 
   playerModal.style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
 
-function loadShikimoriEpisode(shikiId, episodeNum) {
-  player.src = `https://shikimori.one/anime/${shikiId}/embed?episode=${episodeNum}`;
+function loadEpisode(episode) {
+  // Если есть ссылка в БД - используем её, иначе Shikimori
+  if (episode.link && episode.link.trim()!== '') {
+    player.src = episode.link;
+  } else {
+    player.src = `https://shikimori.one/anime/${currentAnime.shiki_id}/embed?episode=${episode.num}`;
+  }
 }
 
 function renderEpisodeList(anime, activeNum) {
@@ -156,9 +164,10 @@ function renderEpisodeList(anime, activeNum) {
     btn.textContent = `${ep.num}. ${ep.title || 'Серия ' + ep.num}`;
     if (ep.num === activeNum) btn.classList.add('active');
     if (isEpisodeWatched(anime.id, ep.num)) btn.classList.add('watched');
+    if (ep.link) btn.title = 'Есть внешняя ссылка';
 
     btn.onclick = () => {
-      loadShikimoriEpisode(anime.shiki_id, ep.num);
+      loadEpisode(ep);
       saveWatchedEpisode(anime.id, ep.num);
       renderEpisodeList(anime, ep.num);
     };
@@ -191,9 +200,17 @@ document.getElementById('close-player').onclick = () => {
   playerModal.style.display = 'none';
   player.src = '';
   document.body.style.overflow = 'auto';
+  currentAnime = null;
   renderCatalog(allAnime);
 };
 
 playerModal.onclick = (e) => {
   if (e.target === playerModal) document.getElementById('close-player').click();
 };
+
+// Закрытие по ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && playerModal.style.display === 'block') {
+    document.getElementById('close-player').click();
+  }
+});
