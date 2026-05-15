@@ -16,38 +16,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindEvents() {
-  document.getElementById('add-episode-row').onclick = addEpisodeRow;
+  document.getElementById('add-episode-row').onclick = () => {
+    document.getElementById('episodes-form').insertAdjacentHTML('beforeend', `
+      <div class="episode-row">
+        <input type="number" class="ep-num" placeholder="№" min="1">
+        <input type="text" class="ep-title" placeholder="Название серии">
+        <button type="button" class="btn btn-danger remove-ep">×</button>
+      </div>
+    `);
+  };
+
   document.getElementById('save-episodes').onclick = saveEpisodes;
   document.getElementById('save-anime').onclick = saveAnime;
   document.getElementById('update-anime').onclick = updateAnime;
   document.getElementById('close-edit').onclick = () => {
     document.getElementById('edit-modal').style.display = 'none';
   };
-  document.getElementById('logout-btn').onclick = logout;
+  document.getElementById('logout-btn').onclick = () => {
+    localStorage.removeItem(ADMIN_KEY);
+    window.location.href = '/';
+  };
 
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-ep')) {
       e.target.closest('.episode-row').remove();
     }
   });
-
-  document.getElementById('anime-select').onchange = loadEpisodesForAnime;
-}
-
-function logout() {
-  localStorage.removeItem(ADMIN_KEY);
-  window.location.href = '/';
-}
-
-function addEpisodeRow() {
-  document.getElementById('episodes-form').insertAdjacentHTML('beforeend', `
-    <div class="episode-row">
-      <input type="number" class="ep-num" placeholder="№" min="1">
-      <input type="text" class="ep-title" placeholder="Название серии">
-      <input type="text" class="ep-link" placeholder="Ссылка на видео">
-      <button type="button" class="btn btn-danger remove-ep">×</button>
-    </div>
-  `);
 }
 
 async function loadAnime() {
@@ -59,8 +53,8 @@ async function loadAnime() {
     renderEditList(data);
     fillAnimeSelect(data);
   } catch (e) {
-    console.error('Ошибка загрузки:', e);
-    alert('Ошибка загрузки данных. Проверь консоль F12');
+    console.error(e);
+    alert('Ошибка загрузки данных');
   }
 }
 
@@ -94,45 +88,24 @@ function fillAnimeSelect(data) {
   });
 }
 
-async function loadEpisodesForAnime() {
-  const animeId = document.getElementById('anime-select').value;
-  if (!animeId) return;
-  
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes?anime_id=eq.${animeId}&order=num.asc`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-  });
-  const episodes = await res.json();
-  
-  console.log('Загружены серии:', episodes);
-}
-
 async function saveEpisodes() {
   const animeId = document.getElementById('anime-select').value;
   if (!animeId) return alert('Выбери аниме');
 
   const episodes = [];
-  let hasError = false;
-
   document.querySelectorAll('.episode-row').forEach(row => {
     const num = row.querySelector('.ep-num').value;
     const title = row.querySelector('.ep-title').value;
-    const link = row.querySelector('.ep-link').value;
-    
     if (num) {
-      if (!link) hasError = true;
       episodes.push({
         anime_id: parseInt(animeId),
         num: parseInt(num),
-        title: title || `Серия ${num}`,
-        link: link || null
+        title: title || `Серия ${num}`
       });
     }
   });
 
   if (episodes.length === 0) return alert('Заполни хотя бы одну серию');
-  if (hasError) {
-    if (!confirm('Есть серии без ссылки. Сохранить всё равно?')) return;
-  }
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes`, {
     method: 'POST',
@@ -144,9 +117,7 @@ async function saveEpisodes() {
     alert(`✅ Добавлено ${episodes.length} серий`);
     location.reload();
   } else {
-    const err = await res.text();
-    alert('❌ Ошибка: ' + err);
-    console.error(err);
+    alert('❌ Ошибка: ' + await res.text());
   }
 }
 
@@ -158,7 +129,7 @@ async function saveAnime() {
     genres: document.getElementById('genres').value.split(',').map(s => s.trim()).filter(Boolean),
     description: document.getElementById('description').value.trim()
   };
-  
+
   if (!body.title ||!body.shiki_id) return alert('Заполни название и Shiki ID');
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/anime`, {
@@ -171,9 +142,7 @@ async function saveAnime() {
     alert('✅ Аниме добавлено');
     location.reload();
   } else {
-    const err = await res.text();
-    alert('❌ Ошибка: ' + err);
-    console.error(err);
+    alert('❌ Ошибка: ' + await res.text());
   }
 }
 
@@ -206,9 +175,7 @@ async function updateAnime() {
     alert('✅ Обновлено');
     location.reload();
   } else {
-    const err = await res.text();
-    alert('❌ Ошибка: ' + err);
-    console.error(err);
+    alert('❌ Ошибка: ' + await res.text());
   }
 }
 
@@ -219,10 +186,7 @@ window.deleteAnime = async (id) => {
     headers: getHeaders()
   });
   if (res.ok) location.reload();
-  else {
-    const err = await res.text();
-    alert('❌ Ошибка удаления: ' + err);
-  }
+  else alert('❌ Ошибка удаления');
 };
 
 function getHeaders() {
@@ -233,4 +197,4 @@ function getHeaders() {
     'Prefer': 'return=representation',
     'x-admin-password': ADMIN_PASSWORD
   };
-}isAdmin';
+}
