@@ -163,7 +163,7 @@ function openPlayer(anime) {
   document.getElementById('watching-title').textContent = anime.title;
   document.getElementById('modal-desc').textContent = anime.description || 'Описание отсутствует';
   document.getElementById('modal-cover').src = anime.cover;
-  document.getElementById('shiki-link').href = `https://shikimori.one/anime/${anime.shiki_id}`;
+  document.getElementById('shiki-link').href = `https://shikimori.one/animes/${anime.shiki_id}`;
 
   const sortedEps = (anime.episodes || []).sort((a, b) => a.num - b.num);
   const startEp = sortedEps[0];
@@ -183,7 +183,7 @@ function openPlayer(anime) {
 function loadEpisode(epNum) {
   const player = document.getElementById('player');
   if (!player ||!currentAnime) return;
-  player.src = `https://shikimori.one/anime/${currentAnime.shiki_id}/embed?episode=${epNum}`;
+  player.src = `https://shikimori.one/animes/${currentAnime.shiki_id}/watch=${epNum}`;
 }
 
 function renderEpisodeList(anime, activeNum) {
