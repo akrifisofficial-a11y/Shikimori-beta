@@ -374,4 +374,42 @@ button:hover, .btn:hover {
   #search { max-width: 100%; }
   .anime-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
   .modal-content { margin: 20px 16px; padding: 24px; }
-         }
+  .episode-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 40px;
+  gap: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.episode-row input {
+  margin: 0;
+}
+
+.episode-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ep-count {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+  .episode-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .episode-row .remove-ep {
+    width: 100%;
+  }
+}       
+}
