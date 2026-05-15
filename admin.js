@@ -3,7 +3,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const ADMIN_KEY = 'isAdmin';
 const ADMIN_PASSWORD = 'admin123'; // должен совпадать с SQL
 
-// Проверка доступа
+let editingAnime = null;
+
 if (localStorage.getItem(ADMIN_KEY)!== 'true') {
   alert('Доступ запрещен. Войди через главную страницу');
   window.location.href = '/';
@@ -13,20 +14,14 @@ loadAnime();
 
 async function loadAnime() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/anime?select=*&order=created_at.desc`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/anime?select=*,episodes(*)&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
-
-    if (!res.ok) throw new Error('Ошибка загрузки');
 
     const data = await res.json();
     renderEditList(data);
     fillAnimeSelect(data);
   } catch (e) {
-    document.getElementById('anime-edit-list').innerHTML = '<p class="empty">Ошибка загрузки данных</p>';
     console.error(e);
   }
 }
@@ -46,8 +41,12 @@ function renderEditList(data) {
         <div>
           <strong>${anime.title}</strong>
           <span class="shiki-id">Shiki ID: ${anime.shiki_id}</span>
+          <span class="ep-count">${anime.episodes?.length || 0} серий</span>
         </div>
-        <button onclick="deleteAnime(${anime.id})" class="btn btn-danger">Удалить</button>
+        <div class="edit-actions">
+          <button onclick='editAnime(${JSON.stringify(anime)})' class="btn">Редактировать</button>
+          <button onclick="deleteAnime(${anime.id})" class="btn btn-danger">Удалить</button>
+        </div>
       </div>
     `;
   });
@@ -61,32 +60,14 @@ function fillAnimeSelect(data) {
   });
 }
 
+// Добавление аниме
 document.getElementById('save-anime').onclick = async () => {
-  const title = document.getElementById('title').value.trim();
-  const shiki_id = document.getElementById('shiki_id').value.trim();
-
-  if (!title ||!shiki_id) {
-    alert('Заполни название и Shiki ID');
-    return;
-  }
-
-  const body = {
-    title: title,
-    shiki_id: shiki_id,
-    cover: document.getElementById('cover').value.trim(),
-    genres: document.getElementById('genres').value.split(',').map(s => s.trim()).filter(Boolean),
-    description: document.getElementById('description').value.trim()
-  };
+  const body = getAnimeFormData();
+  if (!body.title ||!body.shiki_id) return alert('Заполни название и Shiki ID');
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/anime`, {
     method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-admin-password': ADMIN_PASSWORD
-    },
+    headers: getHeaders(),
     body: JSON.stringify(body)
   });
 
@@ -94,78 +75,113 @@ document.getElementById('save-anime').onclick = async () => {
     alert('✅ Аниме добавлено');
     location.reload();
   } else {
-    const err = await res.text();
-    alert('❌ Ошибка: ' + err);
-    console.error(err);
+    alert('❌ Ошибка: ' + await res.text());
   }
 };
 
-document.getElementById('save-episode').onclick = async () => {
+// Добавление серий пачкой
+document.getElementById('save-episodes').onclick = async () => {
   const animeId = document.getElementById('anime-select').value;
-  const epNum = document.getElementById('ep-num').value;
+  const linksText = document.getElementById('ep-links').value.trim();
 
-  if (!animeId ||!epNum) {
-    alert('Выбери аниме и укажи номер серии');
-    return;
-  }
+  if (!animeId ||!linksText) return alert('Выбери аниме и вставь ссылки');
 
-  const body = {
-    anime_id: parseInt(animeId),
-    num: parseInt(epNum),
-    title: document.getElementById('ep-title').value.trim()
-  };
+  const lines = linksText.split('\n').filter(l => l.trim());
+  const episodes = lines.map((line, i) => {
+    const parts = line.split('|');
+    return {
+      anime_id: parseInt(animeId),
+      num: parseInt(parts[0].trim()),
+      title: parts[1]?.trim() || `Серия ${parts[0].trim()}`,
+      link: parts[2]?.trim() || null
+    };
+  });
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes`, {
     method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'x-admin-password': ADMIN_PASSWORD
-    },
+    headers: getHeaders(),
+    body: JSON.stringify(episodes)
+  });
+
+  if (res.ok) {
+    alert(`✅ Добавлено ${episodes.length} серий`);
+    location.reload();
+  } else {
+    alert('❌ Ошибка: ' + await res.text());
+  }
+};
+
+// Редактирование аниме
+window.editAnime = (anime) => {
+  editingAnime = anime;
+  document.getElementById('edit-title').value = anime.title;
+  document.getElementById('edit-shiki_id').value = anime.shiki_id;
+  document.getElementById('edit-cover').value = anime.cover || '';
+  document.getElementById('edit-genres').value = anime.genres?.join(', ') || '';
+  document.getElementById('edit-description').value = anime.description || '';
+  document.getElementById('edit-modal').style.display = 'block';
+};
+
+document.getElementById('update-anime').onclick = async () => {
+  const body = getEditFormData();
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/anime?id=eq.${editingAnime.id}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
     body: JSON.stringify(body)
   });
 
   if (res.ok) {
-    alert('✅ Серия добавлена');
+    alert('✅ Обновлено');
     location.reload();
   } else {
-    const err = await res.text();
-    alert('❌ Ошибка: ' + err);
-    console.error(err);
+    alert('❌ Ошибка: ' + await res.text());
   }
+};
+
+document.getElementById('close-edit').onclick = () => {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingAnime = null;
 };
 
 window.deleteAnime = async (id) => {
-  if (!confirm('Удалить аниме и все серии? Отменить нельзя.')) return;
+  if (!confirm('Удалить аниме и все серии?')) return;
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/anime?id=eq.${id}`, {
     method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'x-admin-password': ADMIN_PASSWORD
-    }
+    headers: getHeaders()
   });
 
-  if (res.ok) {
-    alert('✅ Удалено');
-    location.reload();
-  } else {
-    const err = await res.text();
-    alert('❌ Ошибка удаления: ' + err);
-  }
+  if (res.ok) location.reload();
+  else alert('❌ Ошибка удаления');
 };
 
-// Кнопка выхода
-document.addEventListener('DOMContentLoaded', () => {
-  const logoutBtn = document.createElement('button');
-  logoutBtn.textContent = 'Выйти из админки';
-  logoutBtn.className = 'btn btn-danger';
-  logoutBtn.style.marginTop = '20px';
-  logoutBtn.onclick = () => {
-    localStorage.removeItem(ADMIN_KEY);
-    window.location.href = '/';
+function getAnimeFormData() {
+  return {
+    title: document.getElementById('title').value.trim(),
+    shiki_id: document.getElementById('shiki_id').value.trim(),
+    cover: document.getElementById('cover').value.trim(),
+    genres: document.getElementById('genres').value.split(',').map(s => s.trim()).filter(Boolean),
+    description: document.getElementById('description').value.trim()
   };
-  document.querySelector('main').appendChild(logoutBtn);
-});
+}
+
+function getEditFormData() {
+  return {
+    title: document.getElementById('edit-title').value.trim(),
+    shiki_id: document.getElementById('edit-shiki_id').value.trim(),
+    cover: document.getElementById('edit-cover').value.trim(),
+    genres: document.getElementById('edit-genres').value.split(',').map(s => s.trim()).filter(Boolean),
+    description: document.getElementById('edit-description').value.trim()
+  };
+}
+
+function getHeaders() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+    'x-admin-password': ADMIN_PASSWORD
+  };
+    }
