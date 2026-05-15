@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://твой-project.supabase.co';
-const SUPABASE_KEY = 'твой-anon-key';
+const SUPABASE_URL = 'https://ywovqlnadbpwxnkvllhh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3b3ZxbG5hZGJwd3hua3ZsbGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4Njk1NjAsImV4cCI6MjA5NDQ0NTU2MH0.Fb9zC4g6BPV2R-ogXNvtyGmh_HJf06E7pNnin1E1dpw';
 
 const animeList = document.getElementById('anime-list');
 const playerModal = document.getElementById('player-modal');
