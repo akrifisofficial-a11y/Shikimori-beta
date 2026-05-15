@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админка</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <div style="display:flex; justify-content: space-between; align-items:center; margin:20px 0;">
+      <h1>Админ-панель</h1>
+      <a href="/" class="btn-admin">← На сайт</a>
+    </div>
+
+    <div class="admin-section">
+      <h2>Добавить аниме</h2>
+      <input type="text" id="title" placeholder="Название">
+      <input type="text" id="shiki_id" placeholder="Shikimori ID. Пример: 52766">
+      <input type="text" id="cover" placeholder="Ссылка на обложку">
+      <input type="text" id="genres" placeholder="Жанры через запятую">
+      <textarea id="description" placeholder="Описание" rows="3"></textarea>
+      <button id="save-anime" class="btn">Сохранить аниме</button>
+    </div>
+
+    <div class="admin-section">
+      <h2>Добавить серию</h2>
+      <select id="anime-select"></select>
+      <input type="number" id="ep-num" placeholder="Номер серии">
+      <input type="text" id="ep-title" placeholder="Название серии">
+      <button id="save-episode" class="btn">Добавить серию</button>
+    </div>
+
+    <div class="admin-section">
+      <h2>Все аниме</h2>
+      <div id="anime-edit-list"></div>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
